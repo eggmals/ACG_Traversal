@@ -99,7 +99,7 @@ public class PlayerMovement : MonoBehaviour
         _input.OnJumpInput   -= Jump;
         _input.OnClimbInput  -= StartClimb;
         _input.OnCancelClimb -= CancelClimb;
-        _cameraManager.OnChangePerspective += ChangePerspective;
+        _cameraManager.OnChangePerspective -= ChangePerspective;
     }
 
     private void ChangePerspective()
@@ -199,12 +199,14 @@ public class PlayerMovement : MonoBehaviour
         {
             Vector3 jumpDirection = Vector3.up;
             _rigidbody.AddForce(jumpDirection * _jumpForce * Time.deltaTime);
+            _animator.SetTrigger("Jump");
         }
     }
 
     private void CheckIsGrounded()
     {
         _isGrounded = Physics.CheckSphere(_groundDetector.position, _detectorRadius, _groundLayer);
+        _animator.SetBool("IsGrounded", _isGrounded);
     }
 
     private void CheckStep()
