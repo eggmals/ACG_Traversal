@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -69,10 +70,12 @@ public class PlayerMovement : MonoBehaviour
     private CameraManager _cameraManager;
 
     private PlayerStance _playerStance;
+    private Animator _animator;
 
     private void Awake()
     {
         _rigidbody    = GetComponent<Rigidbody>();
+        _animator = GetComponent<Animator>();
         _speed        = _walkSpeed;
         _playerStance = PlayerStance.Stand;
 
@@ -86,6 +89,7 @@ public class PlayerMovement : MonoBehaviour
         _input.OnJumpInput   += Jump;
         _input.OnClimbInput  += StartClimb;
         _input.OnCancelClimb += CancelClimb;
+        _cameraManager.OnChangePerspective += ChangePerspective;
     }
 
     private void OnDestroy()
@@ -95,6 +99,12 @@ public class PlayerMovement : MonoBehaviour
         _input.OnJumpInput   -= Jump;
         _input.OnClimbInput  -= StartClimb;
         _input.OnCancelClimb -= CancelClimb;
+        _cameraManager.OnChangePerspective += ChangePerspective;
+    }
+
+    private void ChangePerspective()
+    {
+        _animator.SetTrigger("ChangePerspective");
     }
 
     private void Update()
@@ -153,6 +163,11 @@ public class PlayerMovement : MonoBehaviour
                 default:
                     break;
             }
+            Vector3 velocity = new Vector3(_rigidbody.linearVelocity.x, 0, _rigidbody.linearVelocity.z);
+                    _animator.SetFloat("Velocity", velocity.magnitude * axisDirection.magnitude);
+                    _animator.SetFloat("VelocityZ", velocity.magnitude * axisDirection.y);
+                    _animator.SetFloat("VelocityX", velocity.magnitude * axisDirection.x);
+
         }
         else if (isPlayerClimbing)
         {
