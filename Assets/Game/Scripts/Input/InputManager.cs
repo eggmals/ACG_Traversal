@@ -11,6 +11,10 @@ public class InputManager : MonoBehaviour
     public Action OnClimbInput;
     public Action OnCancelClimb;
     public Action OnChangePOV;
+    public Action OnCrouchInput; 
+
+    [SerializeField]
+    private float _crouchSpeed;
 
     private void Update()
     {
@@ -55,29 +59,23 @@ public class InputManager : MonoBehaviour
     {
         bool isHoldSprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
-        if (isHoldSprintInput)
+        if (OnSprintInput != null)
         {
-            if (OnSprintInput != null)
-            {
-                OnSprintInput(true);
-            }
-        }
-        else
-        {
-            if (OnSprintInput != null)
-            {
-                OnSprintInput(false);
-            }
+            OnSprintInput(isHoldSprintInput);
         }
     }
 
     private void CheckCrouchInput()
     {
-        bool isPressCrouchInput = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        bool isPressCrouchInput = Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl);
 
         if (isPressCrouchInput)
         {
             Debug.Log("Crouch");
+            if (OnCrouchInput != null)
+            {
+                OnCrouchInput(); 
+            }
         }
     }
 

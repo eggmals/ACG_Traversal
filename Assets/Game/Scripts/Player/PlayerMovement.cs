@@ -10,10 +10,16 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody _rigidbody;
 
     [SerializeField]
+    private CapsuleCollider _collider;
+
+    [SerializeField]
     private float _walkSpeed;
 
     [SerializeField]
     private float _sprintSpeed;
+
+    [SerializeField]
+    private float _crouchSpeed = 325f; 
 
     [SerializeField]
     private float _walkSprintTransition;
@@ -76,6 +82,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _rigidbody    = GetComponent<Rigidbody>();
         _animator = GetComponent<Animator>();
+        _collider = GetComponent<CapsuleCollider>();
         _speed        = _walkSpeed;
         _playerStance = PlayerStance.Stand;
 
@@ -90,6 +97,7 @@ public class PlayerMovement : MonoBehaviour
         _input.OnClimbInput  += StartClimb;
         _input.OnCancelClimb += CancelClimb;
         _cameraManager.OnChangePerspective += ChangePerspective;
+        _input.OnCrouchInput += Crouch; 
     }
 
     private void OnDestroy()
@@ -100,6 +108,7 @@ public class PlayerMovement : MonoBehaviour
         _input.OnClimbInput  -= StartClimb;
         _input.OnCancelClimb -= CancelClimb;
         _cameraManager.OnChangePerspective -= ChangePerspective;
+        _input.OnCrouchInput -= Crouch;
     }
 
     private void ChangePerspective()
@@ -125,8 +134,14 @@ public class PlayerMovement : MonoBehaviour
 
         bool isPlayerStanding = _playerStance == PlayerStance.Stand;
         bool isPlayerClimbing = _playerStance == PlayerStance.Climb;
+        bool isPlayerCrouching = _playerStance == PlayerStance.Crouch; 
 
-        if (isPlayerStanding)
+        if (isPlayerCrouching)
+        {
+            _speed = _crouchSpeed;
+        }
+
+        if (isPlayerStanding || isPlayerCrouching) 
         {
             switch (_cameraManager.CameraState)
             {
@@ -159,15 +174,9 @@ public class PlayerMovement : MonoBehaviour
 
                     _rigidbody.AddForce(movementDirection * Time.deltaTime * _speed);
                     break;
-
-                default:
-                    break;
             }
             Vector3 velocity = new Vector3(_rigidbody.linearVelocity.x, 0, _rigidbody.linearVelocity.z);
-                    _animator.SetFloat("Velocity", velocity.magnitude * axisDirection.magnitude);
-                    _animator.SetFloat("VelocityZ", velocity.magnitude * axisDirection.y);
-                    _animator.SetFloat("VelocityX", velocity.magnitude * axisDirection.x);
-
+            _animator.SetFloat("Velocity", velocity.magnitude * axisDirection.magnitude);
         }
         else if (isPlayerClimbing)
         {
@@ -181,6 +190,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Sprint(bool isSprint)
     {
+        if (_playerStance == PlayerStance.Crouch) return;
+
         if (isSprint)
         {
             if (_speed < _sprintSpeed)
@@ -260,6 +271,26 @@ public class PlayerMovement : MonoBehaviour
 
             _cameraManager.SetFPSClampedCamera(false, transform.rotation.eulerAngles);
             _cameraManager.SetTPSFieldOFView(70);
+        }
+    }
+
+    private void Crouch()
+    {
+        if (_playerStance == PlayerStance.Stand)
+        {
+            _playerStance = PlayerStance.Crouch;
+            _animator.SetBool("IsCrouch", true);
+            
+            _collider.height = 1.3f;
+            _collider.center = new Vector3(0, 0.66f, 0);
+        }
+        else if (_playerStance == PlayerStance.Crouch)
+        {
+            _playerStance = PlayerStance.Stand;
+            _animator.SetBool("IsCrouch", false);
+
+            _collider.height = 2f;
+            _collider.center = new Vector3(0, 1f, 0);
         }
     }
 }

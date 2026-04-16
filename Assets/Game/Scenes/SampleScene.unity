@@ -428,6 +428,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55eab46e11ba3466db4c9096193206fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _crouchSpeed: 0
 --- !u!4 &331304516
 Transform:
   m_ObjectHideFlags: 0
@@ -4925,8 +4926,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _input: {fileID: 331304515}
   _rigidbody: {fileID: 3438162971768542005}
+  _collider: {fileID: 0}
   _walkSpeed: 350
   _sprintSpeed: 450
+  _crouchSpeed: 325
   _walkSprintTransition: 30
   _rotationSmoothTime: 0.1
   _jumpForce: 10000
