@@ -175,16 +175,23 @@ public class PlayerMovement : MonoBehaviour
                     _rigidbody.AddForce(movementDirection * Time.deltaTime * _speed);
                     break;
             }
+            
+            // Menggunakan linearVelocity untuk parameter Velocity jalan/lari
             Vector3 velocity = new Vector3(_rigidbody.linearVelocity.x, 0, _rigidbody.linearVelocity.z);
             _animator.SetFloat("Velocity", velocity.magnitude * axisDirection.magnitude);
         }
         else if (isPlayerClimbing)
         {
+            // Logika Gerakan Memanjat
             Vector3 horizontal = axisDirection.x * transform.right;
             Vector3 vertical   = axisDirection.y * transform.up;
             movementDirection  = horizontal + vertical;
 
             _rigidbody.AddForce(movementDirection * Time.deltaTime * _climbSpeed);
+
+            // TAMBAHAN MATERI CLIMB: Update parameter Animator untuk memanjat
+            _animator.SetFloat("ClimbVelocityX", axisDirection.x * _rigidbody.linearVelocity.magnitude);
+            _animator.SetFloat("ClimbVelocityY", axisDirection.y * _rigidbody.linearVelocity.magnitude);
         }
     }
 
@@ -254,6 +261,9 @@ public class PlayerMovement : MonoBehaviour
             _playerStance             = PlayerStance.Climb;
             _rigidbody.useGravity     = false;
 
+            // TAMBAHAN MATERI CLIMB: Aktifkan status animasi dan ubah collider
+            _animator.SetBool("IsClimbing", true);
+            _collider.center = Vector3.up * 1.3f; 
 
             _cameraManager.SetFPSClampedCamera(true, transform.rotation.eulerAngles);
             _cameraManager.SetTPSFieldOFView(40);
@@ -268,6 +278,9 @@ public class PlayerMovement : MonoBehaviour
             _rigidbody.useGravity     = true;
             transform.position       -= transform.forward * 1f;
 
+            // TAMBAHAN MATERI CLIMB: Matikan status animasi dan kembalikan collider
+            _animator.SetBool("IsClimbing", false);
+            _collider.center = Vector3.up * 1f; // Sesuai dengan nilai default di method Crouch
 
             _cameraManager.SetFPSClampedCamera(false, transform.rotation.eulerAngles);
             _cameraManager.SetTPSFieldOFView(70);
