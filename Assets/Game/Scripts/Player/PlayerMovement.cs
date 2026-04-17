@@ -75,6 +75,22 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private CameraManager _cameraManager;
 
+    [Header("Glide Settings")]
+    [SerializeField]
+    private float _glideSpeed = 70f;
+
+    [SerializeField]
+    private float _airDrag = 5f;
+
+    [SerializeField]
+    private Vector3 _glideRotationSpeed = new Vector3(20, 40, 20);
+
+    [SerializeField]
+    private float _minGlideRotationX = -10f;
+
+    [SerializeField]
+    private float _maxGlideRotationX = 14f;
+
     private PlayerStance _playerStance;
     private Animator _animator;
 
@@ -98,6 +114,9 @@ public class PlayerMovement : MonoBehaviour
         _input.OnCancelClimb += CancelClimb;
         _cameraManager.OnChangePerspective += ChangePerspective;
         _input.OnCrouchInput += Crouch; 
+
+        _input.OnGlideInput  += StartGlide;
+        _input.OnCancelGlide += CancelGlide;
     }
 
     private void OnDestroy()
@@ -109,6 +128,9 @@ public class PlayerMovement : MonoBehaviour
         _input.OnCancelClimb -= CancelClimb;
         _cameraManager.OnChangePerspective -= ChangePerspective;
         _input.OnCrouchInput -= Crouch;
+
+        _input.OnGlideInput  -= StartGlide;
+        _input.OnCancelGlide -= CancelGlide;
     }
 
     private void ChangePerspective()
@@ -120,6 +142,8 @@ public class PlayerMovement : MonoBehaviour
     {
         CheckIsGrounded();
         CheckStep();
+        
+        Glide();
     }
 
     private void HideAndLockCursor()
@@ -135,6 +159,7 @@ public class PlayerMovement : MonoBehaviour
         bool isPlayerStanding = _playerStance == PlayerStance.Stand;
         bool isPlayerClimbing = _playerStance == PlayerStance.Climb;
         bool isPlayerCrouching = _playerStance == PlayerStance.Crouch; 
+        bool isPlayerGliding = _playerStance == PlayerStance.Glide; // Cek status Glide
 
         if (isPlayerCrouching)
         {
@@ -176,22 +201,32 @@ public class PlayerMovement : MonoBehaviour
                     break;
             }
             
-            // Menggunakan linearVelocity untuk parameter Velocity jalan/lari
             Vector3 velocity = new Vector3(_rigidbody.linearVelocity.x, 0, _rigidbody.linearVelocity.z);
             _animator.SetFloat("Velocity", velocity.magnitude * axisDirection.magnitude);
         }
         else if (isPlayerClimbing)
         {
-            // Logika Gerakan Memanjat
             Vector3 horizontal = axisDirection.x * transform.right;
             Vector3 vertical   = axisDirection.y * transform.up;
             movementDirection  = horizontal + vertical;
 
             _rigidbody.AddForce(movementDirection * Time.deltaTime * _climbSpeed);
 
-            // TAMBAHAN MATERI CLIMB: Update parameter Animator untuk memanjat
             _animator.SetFloat("ClimbVelocityX", axisDirection.x * _rigidbody.linearVelocity.magnitude);
             _animator.SetFloat("ClimbVelocityY", axisDirection.y * _rigidbody.linearVelocity.magnitude);
+        }
+        else if (isPlayerGliding)
+        {
+            Vector3 rotationDegree = transform.rotation.eulerAngles;
+
+            rotationDegree.x += axisDirection.y * _glideRotationSpeed.x * Time.deltaTime;
+            rotationDegree.x = Mathf.Clamp((rotationDegree.x <= 180) ? rotationDegree.x : rotationDegree.x - 360, 
+                                            _minGlideRotationX, _maxGlideRotationX);
+
+            rotationDegree.y += axisDirection.x * _glideRotationSpeed.y * Time.deltaTime;
+            rotationDegree.z = -axisDirection.x * _glideRotationSpeed.z;
+
+            transform.rotation = Quaternion.Euler(rotationDegree);
         }
     }
 
@@ -225,6 +260,11 @@ public class PlayerMovement : MonoBehaviour
     {
         _isGrounded = Physics.CheckSphere(_groundDetector.position, _detectorRadius, _groundLayer);
         _animator.SetBool("IsGrounded", _isGrounded);
+
+        if (_isGrounded && _playerStance == PlayerStance.Glide)
+        {
+            CancelGlide();
+        }
     }
 
     private void CheckStep()
@@ -261,7 +301,6 @@ public class PlayerMovement : MonoBehaviour
             _playerStance             = PlayerStance.Climb;
             _rigidbody.useGravity     = false;
 
-            // TAMBAHAN MATERI CLIMB: Aktifkan status animasi dan ubah collider
             _animator.SetBool("IsClimbing", true);
             _collider.center = Vector3.up * 1.3f; 
 
@@ -278,9 +317,8 @@ public class PlayerMovement : MonoBehaviour
             _rigidbody.useGravity     = true;
             transform.position       -= transform.forward * 1f;
 
-            // TAMBAHAN MATERI CLIMB: Matikan status animasi dan kembalikan collider
             _animator.SetBool("IsClimbing", false);
-            _collider.center = Vector3.up * 1f; // Sesuai dengan nilai default di method Crouch
+            _collider.center = Vector3.up * 1f; 
 
             _cameraManager.SetFPSClampedCamera(false, transform.rotation.eulerAngles);
             _cameraManager.SetTPSFieldOFView(70);
@@ -305,5 +343,40 @@ public class PlayerMovement : MonoBehaviour
             _collider.height = 2f;
             _collider.center = new Vector3(0, 1f, 0);
         }
+    }
+
+
+    private void StartGlide()
+    {
+        if (!_isGrounded && _playerStance != PlayerStance.Glide)
+        {
+            _playerStance = PlayerStance.Glide;
+            _animator.SetBool("IsGliding", true);
+            
+            _cameraManager.SetFPSClampedCamera(true, transform.rotation.eulerAngles);
+        }
+    }
+
+    private void CancelGlide()
+    {
+        if (_playerStance == PlayerStance.Glide)
+        {
+            _playerStance = PlayerStance.Stand;
+            _animator.SetBool("IsGliding", false);
+            _cameraManager.SetFPSClampedCamera(false, transform.rotation.eulerAngles);
+        }
+    }
+
+    private void Glide()
+    {
+        if (_playerStance != PlayerStance.Glide) return;
+
+        float lift = transform.rotation.eulerAngles.x;
+        if (lift > 180) lift -= 360; 
+
+        Vector3 liftForce = transform.up * (lift + _airDrag);
+        Vector3 glideForce = transform.forward * _glideSpeed;
+
+        _rigidbody.AddForce(liftForce + glideForce);
     }
 }
