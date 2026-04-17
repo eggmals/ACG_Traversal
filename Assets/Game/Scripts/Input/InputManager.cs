@@ -14,6 +14,8 @@ public class InputManager : MonoBehaviour
     public Action OnCrouchInput; 
     public Action OnGlideInput;    
     public Action OnCancelGlide;   
+    public Action OnPunchInput;
+
     [SerializeField]
     private float _crouchSpeed;
 
@@ -141,7 +143,10 @@ public class InputManager : MonoBehaviour
 
         if (isPressPunchInput)
         {
-            Debug.Log("Punch");
+            if (OnPunchInput != null)
+            {
+                OnPunchInput();
+            }
         }
     }
 

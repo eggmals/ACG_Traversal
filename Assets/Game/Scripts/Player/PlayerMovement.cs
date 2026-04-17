@@ -1,4 +1,5 @@
 using System;
+using System.Collections; 
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -91,6 +92,23 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private float _maxGlideRotationX = 14f;
 
+    private bool _isPunching;
+    private int _combo = 0;
+
+    [SerializeField]
+    private float _resetComboInterval;
+    private Coroutine _resetCombo;
+
+    [Header("Punch Settings")]
+    [SerializeField] 
+    private Transform _hitDetector;
+    [SerializeField] 
+    private float _hitDetectorRadius;
+    [SerializeField] 
+    private LayerMask _hitLayer;
+
+
+
     private PlayerStance _playerStance;
     private Animator _animator;
 
@@ -114,9 +132,9 @@ public class PlayerMovement : MonoBehaviour
         _input.OnCancelClimb += CancelClimb;
         _cameraManager.OnChangePerspective += ChangePerspective;
         _input.OnCrouchInput += Crouch; 
-
         _input.OnGlideInput  += StartGlide;
         _input.OnCancelGlide += CancelGlide;
+        _input.OnPunchInput += Punch; 
     }
 
     private void OnDestroy()
@@ -128,9 +146,9 @@ public class PlayerMovement : MonoBehaviour
         _input.OnCancelClimb -= CancelClimb;
         _cameraManager.OnChangePerspective -= ChangePerspective;
         _input.OnCrouchInput -= Crouch;
-
         _input.OnGlideInput  -= StartGlide;
         _input.OnCancelGlide -= CancelGlide;
+        _input.OnPunchInput -= Punch;
     }
 
     private void ChangePerspective()
@@ -166,7 +184,7 @@ public class PlayerMovement : MonoBehaviour
             _speed = _crouchSpeed;
         }
 
-        if (isPlayerStanding || isPlayerCrouching) 
+        if ((isPlayerStanding || isPlayerCrouching) && !_isPunching) 
         {
             switch (_cameraManager.CameraState)
             {
@@ -378,5 +396,53 @@ public class PlayerMovement : MonoBehaviour
         Vector3 glideForce = transform.forward * _glideSpeed;
 
         _rigidbody.AddForce(liftForce + glideForce);
+    }
+
+    private void Punch()
+    {
+        if (!_isPunching && _playerStance == PlayerStance.Stand)
+        {
+            _isPunching = true;
+            if (_combo <3)
+            {
+                _combo = 1;
+            }
+            else
+            {
+                _combo = 1;
+            }
+            _animator.SetInteger("Combo", _combo);
+            _animator.SetTrigger("Punch");
+        }
+
+    }
+
+    public void EndPunch()
+    {
+        _isPunching = false;
+        if (_resetCombo != null)
+        {
+            StopCoroutine(_resetCombo);
+        }
+        _resetCombo = StartCoroutine(ResetCombo()); 
+    }
+
+    private IEnumerator ResetCombo()
+    {
+        yield return new WaitForSeconds(5f);
+        _combo = 0;
+    }
+
+    public void Hit()
+    {
+        Collider[] hitObjects = Physics.OverlapSphere(_hitDetector.position, _hitDetectorRadius, _hitLayer);
+
+        for (int i = 0; i <  hitObjects.Length; i++)
+        {
+            if (hitObjects[i].gameObject != null)
+            {
+                Destroy(hitObjects[i].gameObject);
+            }
+        }
     }
 }
