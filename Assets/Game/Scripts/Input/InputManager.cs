@@ -11,6 +11,13 @@ public class InputManager : MonoBehaviour
     public Action OnClimbInput;
     public Action OnCancelClimb;
     public Action OnChangePOV;
+    public Action OnCrouchInput; 
+    public Action OnGlideInput;    
+    public Action OnCancelGlide;   
+    public Action OnPunchInput;
+
+    [SerializeField]
+    private float _crouchSpeed;
 
     private void Update()
     {
@@ -55,29 +62,23 @@ public class InputManager : MonoBehaviour
     {
         bool isHoldSprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 
-        if (isHoldSprintInput)
+        if (OnSprintInput != null)
         {
-            if (OnSprintInput != null)
-            {
-                OnSprintInput(true);
-            }
-        }
-        else
-        {
-            if (OnSprintInput != null)
-            {
-                OnSprintInput(false);
-            }
+            OnSprintInput(isHoldSprintInput);
         }
     }
 
     private void CheckCrouchInput()
     {
-        bool isPressCrouchInput = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        bool isPressCrouchInput = Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl);
 
         if (isPressCrouchInput)
         {
             Debug.Log("Crouch");
+            if (OnCrouchInput != null)
+            {
+                OnCrouchInput(); 
+            }
         }
     }
 
@@ -110,10 +111,12 @@ public class InputManager : MonoBehaviour
     private void CheckGlideInput()
     {
         bool isPressGlideInput = Input.GetKeyDown(KeyCode.G);
-
         if (isPressGlideInput)
         {
-            Debug.Log("Glide");
+            if (OnGlideInput != null) 
+            {
+            OnGlideInput(); 
+            }
         }
     }
 
@@ -127,6 +130,10 @@ public class InputManager : MonoBehaviour
             {
                 OnCancelClimb();
             }
+            if (OnCancelGlide != null) 
+            {
+            OnCancelGlide();
+            }
         }
     }
 
@@ -136,7 +143,10 @@ public class InputManager : MonoBehaviour
 
         if (isPressPunchInput)
         {
-            Debug.Log("Punch");
+            if (OnPunchInput != null)
+            {
+                OnPunchInput();
+            }
         }
     }
 
