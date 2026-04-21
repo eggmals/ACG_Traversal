@@ -15,6 +15,7 @@ public class InputManager : MonoBehaviour
     public Action OnGlideInput;    
     public Action OnCancelGlide;   
     public Action OnPunchInput;
+    public Action OnMainMenuInput;
 
     [SerializeField]
     private float _crouchSpeed;
@@ -156,7 +157,10 @@ public class InputManager : MonoBehaviour
 
         if (isPressMainMenuInput)
         {
-            Debug.Log("Main Menu");
+            if(OnMainMenuInput != null)
+            {
+                OnMainMenuInput();
+            }
         }
     }
 }
